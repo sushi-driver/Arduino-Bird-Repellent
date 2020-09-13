@@ -1,0 +1,40 @@
+#include "arduinoFFT.h"
+#define maxFrequency 9600 //2x highest expected frequency 
+#define samples 128
+
+unsigned int samplingPeriod;
+unsigned long microSeconds; 
+double real[samples]; 
+double unknown[samples]; 
+
+void setup() {
+  Serial.begin(9600); 
+  samplingPeriod = round(1000000*(1.0/maxFrequency)); 
+  analogWrite(6, 0);
+  analogWrite(11, 100);
+}
+
+void loop() {
+  for(int i=0; i<samples; i++){
+        microSeconds = micros();     
+        real[i] = analogRead(0); 
+        unknown[i] = 0; 
+  }  
+  arduinoFFT().Windowing(real, samples, FFT_WIN_TYP_HAMMING, FFT_FORWARD);
+  arduinoFFT().Compute(real, unknown, samples, FFT_FORWARD);
+  arduinoFFT().ComplexToMagnitude(real, unknown, samples);
+  
+  double peak = arduinoFFT().MajorPeak(real, samples, maxFrequency);
+  Serial.println(peak);   
+  
+    
+    if (peak >= 4000){
+      analogWrite(6, 255);
+      delay(5000);
+      analogWrite(6, 0);
+      delay(2000);
+    }
+    else {
+      analogWrite(6, 0);
+    }
+}
